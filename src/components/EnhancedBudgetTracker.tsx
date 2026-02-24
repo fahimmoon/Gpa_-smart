@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Wallet, Plus, Trash2, TrendingUp, TrendingDown, 
   Coffee, Car, Book, Gamepad2, Zap, Home, MoreHorizontal,
-  PieChart, Calendar, DollarSign, ChevronLeft, ChevronRight,
+  PieChart, Calendar, Banknote, ChevronLeft, ChevronRight,
   Target, ArrowUpCircle, ArrowDownCircle, Repeat, Sparkles,
   AlertTriangle, CheckCircle, BarChart3, Filter, Download
 } from 'lucide-react';
@@ -30,7 +30,7 @@ const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: typeof Coffee; color: str
   other: { icon: MoreHorizontal, color: 'text-slate-400 bg-slate-700', label: 'Other' },
 };
 
-const INCOME_CONFIG: Record<IncomeSource, { icon: typeof DollarSign; color: string; label: string }> = {
+const INCOME_CONFIG: Record<IncomeSource, { icon: typeof Banknote; color: string; label: string }> = {
   allowance: { icon: Wallet, color: 'text-emerald-400 bg-emerald-900/30', label: 'Allowance' },
   parttime: { icon: ArrowUpCircle, color: 'text-blue-400 bg-blue-900/30', label: 'Part-time Job' },
   scholarship: { icon: Sparkles, color: 'text-amber-400 bg-amber-900/30', label: 'Scholarship' },
@@ -40,10 +40,10 @@ const INCOME_CONFIG: Record<IncomeSource, { icon: typeof DollarSign; color: stri
 };
 
 const QUICK_EXPENSES = [
-  { label: 'Coffee', category: 'food' as ExpenseCategory, amount: 5 },
-  { label: 'Lunch', category: 'food' as ExpenseCategory, amount: 15 },
-  { label: 'Bus', category: 'transport' as ExpenseCategory, amount: 3 },
-  { label: 'Snack', category: 'food' as ExpenseCategory, amount: 5 },
+  { label: 'Coffee', category: 'food' as ExpenseCategory, amount: 150 },
+  { label: 'Lunch', category: 'food' as ExpenseCategory, amount: 350 },
+  { label: 'Bus', category: 'transport' as ExpenseCategory, amount: 50 },
+  { label: 'Snack', category: 'food' as ExpenseCategory, amount: 100 },
 ];
 
 type ViewMode = 'overview' | 'expenses' | 'income' | 'analytics';
@@ -67,7 +67,7 @@ export default function EnhancedBudgetTracker({
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | 'all'>('all');
-  const [savingsGoal, setSavingsGoal] = useState(500);
+  const [savingsGoal, setSavingsGoal] = useState(10000);
   
   const [newExpense, setNewExpense] = useState({
     amount: '',
@@ -328,7 +328,7 @@ export default function EnhancedBudgetTracker({
           <h4 className="font-bold mb-4">Set Monthly Budget</h4>
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="number"
                 value={budgetInput}
@@ -355,7 +355,7 @@ export default function EnhancedBudgetTracker({
               className="gpa-card text-center"
             >
               <p className="text-xs text-slate-400 mb-1">Budget</p>
-              <p className="text-xl font-black">${currentBudget.totalBudget.toLocaleString()}</p>
+              <p className="text-xl font-black">Rs. {currentBudget.totalBudget.toLocaleString()}</p>
               <button
                 onClick={() => {
                   setBudgetInput(currentBudget.totalBudget.toString());
@@ -374,7 +374,7 @@ export default function EnhancedBudgetTracker({
               className="gpa-card text-center"
             >
               <p className="text-xs text-slate-400 mb-1">Spent</p>
-              <p className="text-xl font-black text-red-400">${totalSpent.toLocaleString()}</p>
+              <p className="text-xl font-black text-red-400">Rs. {totalSpent.toLocaleString()}</p>
               <p className="text-xs text-slate-500">{currentBudget.expenses.length} items</p>
             </motion.div>
             
@@ -386,7 +386,7 @@ export default function EnhancedBudgetTracker({
             >
               <p className="text-xs text-slate-400 mb-1">Remaining</p>
               <p className={clsx("text-xl font-black", remaining >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                ${Math.abs(remaining).toLocaleString()}
+                Rs. {Math.abs(remaining).toLocaleString()}
               </p>
               <p className="text-xs text-slate-500">{remaining < 0 ? 'Over budget' : 'Left'}</p>
             </motion.div>
@@ -398,7 +398,7 @@ export default function EnhancedBudgetTracker({
               className="gpa-card text-center"
             >
               <p className="text-xs text-slate-400 mb-1">Daily Budget</p>
-              <p className="text-xl font-black text-blue-400">${dailyBudget.toFixed(0)}</p>
+              <p className="text-xl font-black text-blue-400">Rs. {dailyBudget.toFixed(0)}</p>
               <div className={clsx("flex items-center justify-center gap-1 text-xs mt-1", 
                 spendingStatus === 'on-track' ? 'text-emerald-400' : 'text-amber-400'
               )}>
@@ -474,7 +474,7 @@ export default function EnhancedBudgetTracker({
                   >
                     <Icon size={14} className={color.split(' ')[0]} />
                     <span className="text-sm">{item.label}</span>
-                    <span className="text-xs text-slate-400">${item.amount}</span>
+                    <span className="text-xs text-slate-400">Rs. {item.amount}</span>
                   </button>
                 );
               })}
@@ -518,8 +518,8 @@ export default function EnhancedBudgetTracker({
               ))}
             </div>
             <div className="flex justify-between text-xs text-slate-500 mt-2">
-              <span>Daily limit: ${dailyBudget.toFixed(0)}</span>
-              <span>Avg: ${(last7DaysExpenses.reduce((s, d) => s + d.amount, 0) / 7).toFixed(0)}/day</span>
+              <span>Daily limit: Rs. {dailyBudget.toFixed(0)}</span>
+              <span>Avg: Rs. {(last7DaysExpenses.reduce((s, d) => s + d.amount, 0) / 7).toFixed(0)}/day</span>
             </div>
           </motion.div>
 
@@ -535,7 +535,7 @@ export default function EnhancedBudgetTracker({
                 <Target size={18} className="text-violet-400" />
                 Savings Goal
               </h4>
-              <span className="text-sm font-bold text-violet-400">${savingsGoal}</span>
+              <span className="text-sm font-bold text-violet-400">Rs. {savingsGoal}</span>
             </div>
             <div className="h-3 bg-slate-700 rounded-full overflow-hidden mb-2">
               <motion.div
@@ -547,7 +547,7 @@ export default function EnhancedBudgetTracker({
             <div className="flex justify-between text-xs">
               <span className="text-slate-400">
                 Net: <span className={netSavings >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                  ${netSavings.toLocaleString()}
+                  Rs. {netSavings.toLocaleString()}
                 </span>
               </span>
               <span className="text-slate-400">{savingsProgress.toFixed(0)}% of goal</span>
@@ -640,7 +640,7 @@ export default function EnhancedBudgetTracker({
                           {new Date(expense.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <p className="font-bold text-red-400">-${expense.amount}</p>
+                      <p className="font-bold text-red-400">-Rs. {expense.amount}</p>
                       <button
                         onClick={() => onDeleteExpense(currentBudget.id, expense.id)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-all"
@@ -669,7 +669,7 @@ export default function EnhancedBudgetTracker({
             >
               <ArrowUpCircle className="mx-auto mb-2 text-emerald-400" size={24} />
               <p className="text-xs text-slate-400">Total Income</p>
-              <p className="text-2xl font-black text-emerald-400">${totalIncome.toLocaleString()}</p>
+              <p className="text-2xl font-black text-emerald-400">Rs. {totalIncome.toLocaleString()}</p>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -680,7 +680,7 @@ export default function EnhancedBudgetTracker({
               <ArrowDownCircle className="mx-auto mb-2 text-red-400" size={24} />
               <p className="text-xs text-slate-400">Net Balance</p>
               <p className={clsx("text-2xl font-black", netSavings >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                ${netSavings.toLocaleString()}
+                Rs. {netSavings.toLocaleString()}
               </p>
             </motion.div>
           </div>
@@ -724,7 +724,7 @@ export default function EnhancedBudgetTracker({
                           {new Date(income.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <p className="font-bold text-emerald-400">+${income.amount}</p>
+                      <p className="font-bold text-emerald-400">+Rs. {income.amount}</p>
                       {onDeleteIncome && (
                         <button
                           onClick={() => onDeleteIncome(currentBudget.id, income.id)}
@@ -774,7 +774,7 @@ export default function EnhancedBudgetTracker({
                     <div className="flex-1">
                       <div className="flex justify-between text-sm mb-1">
                         <span>{label}</span>
-                        <span className="font-bold">${total.toLocaleString()}</span>
+                        <span className="font-bold">Rs. {total.toLocaleString()}</span>
                       </div>
                       <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                         <motion.div
@@ -822,8 +822,8 @@ export default function EnhancedBudgetTracker({
                   <p className="text-sm font-medium">Spending Pace</p>
                   <p className="text-xs text-slate-400">
                     {spendingStatus === 'on-track' 
-                      ? `You're on track! Spent $${totalSpent} of ideal $${idealSpentByNow.toFixed(0)} by day ${currentDay}`
-                      : `Ahead of pace! Spent $${totalSpent} vs ideal $${idealSpentByNow.toFixed(0)} by day ${currentDay}`
+                      ? `You're on track! Spent Rs. ${totalSpent} of ideal Rs. ${idealSpentByNow.toFixed(0)} by day ${currentDay}`
+                      : `Ahead of pace! Spent Rs. ${totalSpent} vs ideal Rs. ${idealSpentByNow.toFixed(0)} by day ${currentDay}`
                     }
                   </p>
                 </div>
@@ -833,7 +833,7 @@ export default function EnhancedBudgetTracker({
                 <div>
                   <p className="text-sm font-medium">Average Daily Spend</p>
                   <p className="text-xs text-slate-400">
-                    ${(totalSpent / currentDay).toFixed(2)} per day • Target: ${dailyBudget.toFixed(2)}/day
+                    Rs. {(totalSpent / currentDay).toFixed(2)} per day • Target: Rs. {dailyBudget.toFixed(2)}/day
                   </p>
                 </div>
               </div>
@@ -865,7 +865,7 @@ export default function EnhancedBudgetTracker({
               </h4>
               <div className="space-y-4">
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <input
                     type="number"
                     value={newExpense.amount}
@@ -944,7 +944,7 @@ export default function EnhancedBudgetTracker({
               </h4>
               <div className="space-y-4">
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <input
                     type="number"
                     value={newIncome.amount}

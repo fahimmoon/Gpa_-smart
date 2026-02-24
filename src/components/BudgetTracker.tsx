@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Wallet, Plus, Trash2, TrendingUp, TrendingDown, 
   Coffee, Car, Book, Gamepad2, Zap, Home, MoreHorizontal,
-  PieChart, Calendar, DollarSign, ChevronLeft, ChevronRight
+  PieChart, Calendar, Banknote, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import clsx from 'clsx';
 import { MonthlyBudget, Expense, ExpenseCategory } from '../types';
@@ -187,7 +187,7 @@ export default function BudgetTracker({
           >
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="number"
                   value={budgetInput}
@@ -215,13 +215,13 @@ export default function BudgetTracker({
               <div className="bg-slate-800/50 rounded-xl p-3 text-center">
                 <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Budget</p>
                 <p className="text-lg font-black text-white">
-                  ${currentBudget?.totalBudget.toLocaleString()}
+                  Rs. {currentBudget?.totalBudget.toLocaleString()}
                 </p>
               </div>
               <div className="bg-slate-800/50 rounded-xl p-3 text-center">
                 <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Spent</p>
                 <p className="text-lg font-black text-red-400">
-                  ${totalSpent.toLocaleString()}
+                  Rs. {totalSpent.toLocaleString()}
                 </p>
               </div>
               <div className="bg-slate-800/50 rounded-xl p-3 text-center">
@@ -230,7 +230,7 @@ export default function BudgetTracker({
                   "text-lg font-black",
                   remaining >= 0 ? 'text-emerald-400' : 'text-red-400'
                 )}>
-                  ${Math.abs(remaining).toLocaleString()}
+                  Rs. {Math.abs(remaining).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -267,7 +267,7 @@ export default function BudgetTracker({
                   animate={{ opacity: 1 }}
                   className="text-xs text-red-400 mt-1 flex items-center gap-1"
                 >
-                  <TrendingDown size={12} /> Over budget by ${Math.abs(remaining).toLocaleString()}
+                  <TrendingDown size={12} /> Over budget by Rs. {Math.abs(remaining).toLocaleString()}
                 </motion.p>
               )}
             </div>
@@ -298,7 +298,7 @@ export default function BudgetTracker({
             </h4>
             <div className="space-y-3">
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="number"
                   value={newExpense.amount}
@@ -385,7 +385,7 @@ export default function BudgetTracker({
                   <div className="flex-1">
                     <div className="flex justify-between text-sm mb-1">
                       <span>{label}</span>
-                      <span className="font-bold">${total.toLocaleString()}</span>
+                      <span className="font-bold">Rs. {total.toLocaleString()}</span>
                     </div>
                     <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                       <motion.div
@@ -436,7 +436,7 @@ export default function BudgetTracker({
                       {new Date(expense.date).toLocaleDateString()}
                     </p>
                   </div>
-                  <p className="font-bold text-red-400">-${expense.amount}</p>
+                  <p className="font-bold text-red-400">-Rs. {expense.amount}</p>
                   <button
                     onClick={() => onDeleteExpense(currentBudget.id, expense.id)}
                     className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-all"

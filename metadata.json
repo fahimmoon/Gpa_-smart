@@ -1,0 +1,5 @@
+{
+  "name": "Smart GPA Tracker Pro",
+  "description": "Advanced GPA management with semester archiving, smart forecasting, and PWA notifications.",
+  "requestFramePermissions": ["notifications"]
+}

@@ -24,10 +24,14 @@ import {
   BookOpen,
   Sparkles,
   Wallet,
-  UserCheck
+  UserCheck,
+  Timer,
+  Calculator,
+  CalendarClock,
+  Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AppData, Semester, Course, Grade, STORAGE_KEY, TimetableEntry, MonthlyBudget, Expense, Income, AttendanceRecord, AttendanceStatus, Todo, TodoPriority, TodoCategory, CustomNote, NoteCategory, CourseGrading } from './types';
+import { AppData, Semester, Course, Grade, STORAGE_KEY, TimetableEntry, MonthlyBudget, Expense, Income, AttendanceRecord, AttendanceStatus, Todo, TodoPriority, TodoCategory, CustomNote, NoteCategory, CourseGrading, Exam, StudySession, StudyTimerSettings, StudyStreak } from './types';
 import { calculateSemesterGPA, calculateOverallCGPA, getNextSemesterName, percentageToGrade } from './utils';
 import { SemesterCard } from './components/SemesterCard';
 import { GPAChart } from './components/GPAChart';
@@ -43,6 +47,10 @@ import BudgetTracker from './components/BudgetTracker';
 import EnhancedBudgetTracker from './components/EnhancedBudgetTracker';
 import AttendanceTracker from './components/AttendanceTracker';
 import GradingSystem from './components/GradingSystem';
+import StudyTimer from './components/StudyTimer';
+import GradeCalculator from './components/GradeCalculator';
+import ExamCountdown from './components/ExamCountdown';
+import StudyStatistics from './components/StudyStatistics';
 import clsx from 'clsx';
 
 const App: React.FC = () => {
@@ -163,7 +171,7 @@ const App: React.FC = () => {
     };
   });
 
-  const [activeTab, setActiveTab] = useState<'home' | 'semesters' | 'timetable' | 'notes' | 'chart' | 'settings' | 'budget' | 'attendance' | 'grading'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'semesters' | 'timetable' | 'notes' | 'chart' | 'settings' | 'budget' | 'attendance' | 'grading' | 'studyTimer' | 'gradeCalc' | 'examCountdown' | 'studyStats'>('home');
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isTimetableModalOpen, setIsTimetableModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<{ semesterId: string; course?: Course } | null>(null);
@@ -542,6 +550,38 @@ const App: React.FC = () => {
     addToast('Course grading deleted!');
   };
 
+  // Helper function to update study streak
+  const updateStudyStreak = (currentStreak?: StudyStreak): StudyStreak => {
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
+    if (!currentStreak) {
+      return { currentStreak: 1, longestStreak: 1, lastStudyDate: today };
+    }
+
+    const lastDate = currentStreak.lastStudyDate.split('T')[0];
+    
+    if (lastDate === today) {
+      // Already studied today
+      return currentStreak;
+    } else if (lastDate === yesterday) {
+      // Consecutive day
+      const newStreak = currentStreak.currentStreak + 1;
+      return {
+        currentStreak: newStreak,
+        longestStreak: Math.max(newStreak, currentStreak.longestStreak),
+        lastStudyDate: today,
+      };
+    } else {
+      // Streak broken
+      return {
+        currentStreak: 1,
+        longestStreak: currentStreak.longestStreak,
+        lastStudyDate: today,
+      };
+    }
+  };
+
   const clearAllData = () => {
     localStorage.removeItem(STORAGE_KEY);
     window.location.reload();
@@ -797,6 +837,51 @@ const App: React.FC = () => {
               <p className="font-bold text-sm">Grades</p>
               <p className="text-xs text-slate-400 hidden sm:block">Course marks</p>
             </div>
+          </button>
+        </motion.div>
+
+        {/* Study Tools Quick Access */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.52 }}
+          className="grid grid-cols-4 gap-2"
+        >
+          <button
+            onClick={() => setActiveTab('studyTimer')}
+            className="gpa-card flex flex-col items-center gap-2 py-3 hover:scale-[1.02] transition-transform cursor-pointer"
+          >
+            <div className="p-2.5 bg-gradient-to-br from-rose-900/50 to-pink-900/50 rounded-xl">
+              <Timer size={20} className="text-rose-400" />
+            </div>
+            <p className="font-bold text-xs">Timer</p>
+          </button>
+          <button
+            onClick={() => setActiveTab('gradeCalc')}
+            className="gpa-card flex flex-col items-center gap-2 py-3 hover:scale-[1.02] transition-transform cursor-pointer"
+          >
+            <div className="p-2.5 bg-gradient-to-br from-blue-900/50 to-indigo-900/50 rounded-xl">
+              <Calculator size={20} className="text-blue-400" />
+            </div>
+            <p className="font-bold text-xs">GPA Calc</p>
+          </button>
+          <button
+            onClick={() => setActiveTab('examCountdown')}
+            className="gpa-card flex flex-col items-center gap-2 py-3 hover:scale-[1.02] transition-transform cursor-pointer"
+          >
+            <div className="p-2.5 bg-gradient-to-br from-orange-900/50 to-red-900/50 rounded-xl">
+              <CalendarClock size={20} className="text-orange-400" />
+            </div>
+            <p className="font-bold text-xs">Exams</p>
+          </button>
+          <button
+            onClick={() => setActiveTab('studyStats')}
+            className="gpa-card flex flex-col items-center gap-2 py-3 hover:scale-[1.02] transition-transform cursor-pointer"
+          >
+            <div className="p-2.5 bg-gradient-to-br from-teal-900/50 to-cyan-900/50 rounded-xl">
+              <Activity size={20} className="text-teal-400" />
+            </div>
+            <p className="font-bold text-xs">Stats</p>
           </button>
         </motion.div>
 
@@ -1349,6 +1434,139 @@ const App: React.FC = () => {
               onAddGrading={addGrading}
               onUpdateGrading={updateGrading}
               onDeleteGrading={deleteGrading}
+            />
+          </div>
+        )}
+        {activeTab === 'studyTimer' && (
+          <div className="space-y-6 pb-28">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between"
+            >
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <Timer size={24} className="text-rose-400" />
+                Study Timer
+              </h2>
+              <button
+                onClick={() => setActiveTab('home')}
+                className="text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                ← Back
+              </button>
+            </motion.div>
+            <StudyTimer
+              sessions={(data.studySessions || []).map(s => ({
+                id: s.id,
+                date: s.date,
+                duration: s.duration,
+                type: 'focus' as const,
+                completed: true,
+              }))}
+              onAddSession={(session) => {
+                const newSession: StudySession = {
+                  id: Date.now().toString(),
+                  date: session.date,
+                  duration: session.duration,
+                  focusSessions: 1,
+                };
+                setData(prev => ({
+                  ...prev,
+                  studySessions: [...(prev.studySessions || []), newSession],
+                  studyStreak: updateStudyStreak(prev.studyStreak),
+                }));
+              }}
+            />
+          </div>
+        )}
+        {activeTab === 'gradeCalc' && (
+          <div className="space-y-6 pb-28">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between"
+            >
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <Calculator size={24} className="text-blue-400" />
+                GPA Calculator
+              </h2>
+              <button
+                onClick={() => setActiveTab('home')}
+                className="text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                ← Back
+              </button>
+            </motion.div>
+            <GradeCalculator
+              semesters={data.semesters}
+              currentCGPA={cgpa}
+            />
+          </div>
+        )}
+        {activeTab === 'examCountdown' && (
+          <div className="space-y-6 pb-28">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between"
+            >
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <CalendarClock size={24} className="text-orange-400" />
+                Exam Countdown
+              </h2>
+              <button
+                onClick={() => setActiveTab('home')}
+                className="text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                ← Back
+              </button>
+            </motion.div>
+            <ExamCountdown
+              exams={data.exams || []}
+              onAddExam={(exam) => {
+                const newExam: Exam = {
+                  ...exam,
+                  id: Date.now().toString(),
+                };
+                setData(prev => ({ ...prev, exams: [...(prev.exams || []), newExam] }));
+              }}
+              onUpdateExam={(id, updates) => {
+                setData(prev => ({
+                  ...prev,
+                  exams: (prev.exams || []).map(e => e.id === id ? { ...e, ...updates } : e),
+                }));
+              }}
+              onDeleteExam={(id) => {
+                setData(prev => ({
+                  ...prev,
+                  exams: (prev.exams || []).filter(e => e.id !== id),
+                }));
+              }}
+            />
+          </div>
+        )}
+        {activeTab === 'studyStats' && (
+          <div className="space-y-6 pb-28">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between"
+            >
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <Activity size={24} className="text-teal-400" />
+                Study Statistics
+              </h2>
+              <button
+                onClick={() => setActiveTab('home')}
+                className="text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                ← Back
+              </button>
+            </motion.div>
+            <StudyStatistics
+              sessions={data.studySessions || []}
+              currentStreak={data.studyStreak?.currentStreak || 0}
+              longestStreak={data.studyStreak?.longestStreak || 0}
             />
           </div>
         )}

@@ -89,9 +89,40 @@ export interface StudySession {
   id: string;
   courseId?: string;
   courseName?: string;
+  subject?: string;
   duration: number; // in minutes
+  focusSessions: number;
   date: string;
   notes?: string;
+}
+
+export type ExamType = 'midterm' | 'final' | 'quiz' | 'presentation' | 'lab' | 'assignment';
+
+export interface Exam {
+  id: string;
+  name: string;
+  courseName: string;
+  date: string;
+  time?: string;
+  location?: string;
+  type: ExamType;
+  notes?: string;
+  isCompleted: boolean;
+}
+
+export interface StudyTimerSettings {
+  focusDuration: number; // minutes
+  shortBreakDuration: number;
+  longBreakDuration: number;
+  sessionsBeforeLongBreak: number;
+  autoStartBreaks: boolean;
+  soundEnabled: boolean;
+}
+
+export interface StudyStreak {
+  currentStreak: number;
+  longestStreak: number;
+  lastStudyDate: string;
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
@@ -144,10 +175,16 @@ export interface AppData {
   gpaGoal?: number;
   notificationsEnabled: boolean;
   customReminders: { id: string; text: string; date: string }[];
-  // New features
+  // Budget features
   budgets?: MonthlyBudget[];
+  // Study tracking
   studySessions?: StudySession[];
   studyGoalMinutes?: number; // daily study goal in minutes
+  studyTimerSettings?: StudyTimerSettings;
+  studyStreak?: StudyStreak;
+  // Exam tracking
+  exams?: Exam[];
+  // Attendance
   attendance?: AttendanceRecord[];
   courseGradings?: CourseGrading[];
 }

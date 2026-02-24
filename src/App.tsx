@@ -27,17 +27,22 @@ import {
   UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AppData, Semester, Course, Grade, STORAGE_KEY, TimetableEntry, MonthlyBudget, Expense, AttendanceRecord, AttendanceStatus } from './types';
+import { AppData, Semester, Course, Grade, STORAGE_KEY, TimetableEntry, MonthlyBudget, Expense, Income, AttendanceRecord, AttendanceStatus, Todo, TodoPriority, TodoCategory, CustomNote, NoteCategory, CourseGrading } from './types';
 import { calculateSemesterGPA, calculateOverallCGPA, getNextSemesterName, percentageToGrade } from './utils';
 import { SemesterCard } from './components/SemesterCard';
 import { GPAChart } from './components/GPAChart';
 import { Timetable } from './components/Timetable';
+import { EnhancedTimetable } from './components/EnhancedTimetable';
 import { RichTextEditor } from './components/RichTextEditor';
 import { Forecast } from './components/Forecast';
 import { TodoList } from './components/TodoList';
 import { CustomNotesManager } from './components/CustomNotesManager';
+import { EnhancedTodoList } from './components/EnhancedTodoList';
+import { EnhancedNotesManager } from './components/EnhancedNotesManager';
 import BudgetTracker from './components/BudgetTracker';
+import EnhancedBudgetTracker from './components/EnhancedBudgetTracker';
 import AttendanceTracker from './components/AttendanceTracker';
+import GradingSystem from './components/GradingSystem';
 import clsx from 'clsx';
 
 const App: React.FC = () => {
@@ -158,7 +163,7 @@ const App: React.FC = () => {
     };
   });
 
-  const [activeTab, setActiveTab] = useState<'home' | 'semesters' | 'timetable' | 'notes' | 'chart' | 'settings' | 'budget' | 'attendance'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'semesters' | 'timetable' | 'notes' | 'chart' | 'settings' | 'budget' | 'attendance' | 'grading'>('home');
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isTimetableModalOpen, setIsTimetableModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<{ semesterId: string; course?: Course } | null>(null);
@@ -338,18 +343,24 @@ const App: React.FC = () => {
     addToast(`Semester archived! Welcome to ${nextName}`);
   };
 
-  const addTodo = (text: string) => {
+  const addTodo = (todo: Omit<Todo, 'id' | 'createdAt'>) => {
     setData(prev => ({
       ...prev,
       todos: [
         {
           id: Math.random().toString(36).substr(2, 9),
-          text,
-          completed: false,
+          ...todo,
           createdAt: new Date().toISOString()
         },
         ...(prev.todos || [])
       ]
+    }));
+  };
+
+  const updateTodo = (id: string, updates: Partial<Todo>) => {
+    setData(prev => ({
+      ...prev,
+      todos: (prev.todos || []).map(t => t.id === id ? { ...t, ...updates } : t)
     }));
   };
 
@@ -367,19 +378,27 @@ const App: React.FC = () => {
     }));
   };
 
-  const addCustomNote = () => {
+  const addCustomNote = (note: Omit<CustomNote, 'id' | 'createdAt' | 'updatedAt'>) => {
     setData(prev => ({
       ...prev,
       customNotes: [
         {
           id: Math.random().toString(36).substr(2, 9),
-          title: 'New Note',
-          content: '',
+          ...note,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         },
         ...(prev.customNotes || [])
       ]
+    }));
+  };
+
+  const updateCustomNoteEnhanced = (id: string, updates: Partial<CustomNote>) => {
+    setData(prev => ({
+      ...prev,
+      customNotes: (prev.customNotes || []).map(n => 
+        n.id === id ? { ...n, ...updates, updatedAt: new Date().toISOString() } : n
+      )
     }));
   };
 
@@ -445,6 +464,31 @@ const App: React.FC = () => {
     addToast('Expense deleted!');
   };
 
+  // --- Income Handlers ---
+  const addIncome = (budgetId: string, income: Omit<Income, 'id'>) => {
+    setData(prev => ({
+      ...prev,
+      budgets: (prev.budgets || []).map(b => 
+        b.id === budgetId 
+          ? { ...b, incomes: [...(b.incomes || []), { ...income, id: Math.random().toString(36).substr(2, 9) }] }
+          : b
+      )
+    }));
+    addToast('Income added!');
+  };
+
+  const deleteIncome = (budgetId: string, incomeId: string) => {
+    setData(prev => ({
+      ...prev,
+      budgets: (prev.budgets || []).map(b => 
+        b.id === budgetId 
+          ? { ...b, incomes: (b.incomes || []).filter(i => i.id !== incomeId) }
+          : b
+      )
+    }));
+    addToast('Income deleted!');
+  };
+
   // --- Attendance Handlers ---
   const addAttendance = (record: Omit<AttendanceRecord, 'id'>) => {
     setData(prev => ({
@@ -470,6 +514,32 @@ const App: React.FC = () => {
       ...prev,
       attendance: (prev.attendance || []).filter(a => a.id !== id)
     }));
+  };
+
+  // --- Grading Handlers ---
+  const addGrading = (grading: CourseGrading) => {
+    setData(prev => ({
+      ...prev,
+      courseGradings: [...(prev.courseGradings || []), grading]
+    }));
+    addToast('Course grading added!');
+  };
+
+  const updateGrading = (grading: CourseGrading) => {
+    setData(prev => ({
+      ...prev,
+      courseGradings: (prev.courseGradings || []).map(g =>
+        g.id === grading.id ? grading : g
+      )
+    }));
+  };
+
+  const deleteGrading = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      courseGradings: (prev.courseGradings || []).filter(g => g.id !== id)
+    }));
+    addToast('Course grading deleted!');
   };
 
   const clearAllData = () => {
@@ -690,30 +760,42 @@ const App: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.48 }}
-          className="grid grid-cols-2 gap-3"
+          className="grid grid-cols-3 gap-3"
         >
           <button
             onClick={() => setActiveTab('budget')}
-            className="gpa-card flex items-center gap-3 py-4 hover:scale-[1.02] transition-transform cursor-pointer text-left"
+            className="gpa-card flex flex-col sm:flex-row items-center gap-2 sm:gap-3 py-4 hover:scale-[1.02] transition-transform cursor-pointer text-center sm:text-left"
           >
             <div className="p-3 bg-gradient-to-br from-green-900/50 to-emerald-900/50 rounded-xl">
               <Wallet size={24} className="text-green-400" />
             </div>
             <div>
               <p className="font-bold text-sm">Budget</p>
-              <p className="text-xs text-slate-400">Track expenses</p>
+              <p className="text-xs text-slate-400 hidden sm:block">Track expenses</p>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('attendance')}
-            className="gpa-card flex items-center gap-3 py-4 hover:scale-[1.02] transition-transform cursor-pointer text-left"
+            className="gpa-card flex flex-col sm:flex-row items-center gap-2 sm:gap-3 py-4 hover:scale-[1.02] transition-transform cursor-pointer text-center sm:text-left"
           >
             <div className="p-3 bg-gradient-to-br from-violet-900/50 to-purple-900/50 rounded-xl">
               <UserCheck size={24} className="text-violet-400" />
             </div>
             <div>
               <p className="font-bold text-sm">Attendance</p>
-              <p className="text-xs text-slate-400">Track classes</p>
+              <p className="text-xs text-slate-400 hidden sm:block">Track classes</p>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('grading')}
+            className="gpa-card flex flex-col sm:flex-row items-center gap-2 sm:gap-3 py-4 hover:scale-[1.02] transition-transform cursor-pointer text-center sm:text-left"
+          >
+            <div className="p-3 bg-gradient-to-br from-amber-900/50 to-orange-900/50 rounded-xl">
+              <Award size={24} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="font-bold text-sm">Grades</p>
+              <p className="text-xs text-slate-400 hidden sm:block">Course marks</p>
             </div>
           </button>
         </motion.div>
@@ -848,86 +930,127 @@ const App: React.FC = () => {
       ...s.courses.map(c => ({ id: c.id, title: `${s.name} - ${c.name}`, content: c.notes, type: 'course', semesterId: s.id, courseId: c.id }))
     ]).filter(n => n.content.toLowerCase().includes(searchQuery.toLowerCase()) || n.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
+    // Get all courses for todo linking
+    const allCourses = data.semesters.flatMap(s => s.courses);
+
     return (
       <div className="space-y-5 sm:space-y-6 pb-28">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sticky top-0 bg-gradient-to-b from-slate-950 via-slate-950 to-transparent py-4 z-10">
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
           <h2 className="text-xl sm:text-2xl font-bold">Tasks & Notes</h2>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field pl-10 text-sm"
-            />
-          </div>
-        </div>
+        </motion.div>
 
-        {!searchQuery && (
-          <TodoList 
-            todos={data.todos || []} 
-            onAddTodo={addTodo} 
-            onToggleTodo={toggleTodo} 
-            onDeleteTodo={deleteTodo} 
-          />
-        )}
+        {/* Enhanced Todo List */}
+        <EnhancedTodoList 
+          todos={(data.todos || []).map(t => ({
+            ...t,
+            priority: t.priority || 'medium',
+            category: t.category || 'other'
+          }))} 
+          courses={allCourses}
+          onAddTodo={addTodo} 
+          onToggleTodo={toggleTodo} 
+          onDeleteTodo={deleteTodo}
+          onUpdateTodo={updateTodo}
+        />
 
-        {!searchQuery && (
-          <div className="gpa-card bg-slate-900 border-l-4 border-l-blue-500">
-            <h4 className="font-bold mb-4 flex items-center justify-between">
+        {/* Global Scratchpad */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="gpa-card border-l-4 border-l-blue-500"
+        >
+          <h4 className="font-bold mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-900/30 rounded-xl">
+                <BookOpen size={16} className="text-blue-400" />
+              </div>
               Global Scratchpad
-              <span className="text-[10px] font-black uppercase text-slate-400 bg-slate-800 px-2 py-1 rounded">
-                Global
-              </span>
-            </h4>
-            <RichTextEditor
-              value={data.globalNotes || ''}
-              onChange={(newContent) => setData(prev => ({ ...prev, globalNotes: newContent }))}
-              placeholder="Jot down quick thoughts, ideas, or links here..."
-              className="min-h-[150px]"
-            />
-          </div>
-        )}
+            </div>
+            <span className="text-[10px] font-black uppercase text-slate-400 bg-slate-800 px-2 py-1 rounded">
+              Quick Notes
+            </span>
+          </h4>
+          <RichTextEditor
+            value={data.globalNotes || ''}
+            onChange={(newContent) => setData(prev => ({ ...prev, globalNotes: newContent }))}
+            placeholder="Jot down quick thoughts, ideas, or links here..."
+            className="min-h-[150px]"
+          />
+        </motion.div>
 
-        {!searchQuery && (
-          <CustomNotesManager
-            notes={data.customNotes || []}
+        {/* Enhanced Notes Manager */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <EnhancedNotesManager
+            notes={(data.customNotes || []).map(n => ({
+              ...n,
+              category: n.category || 'other',
+              isPinned: n.isPinned || false,
+              tags: n.tags || []
+            }))}
             onAddNote={addCustomNote}
-            onUpdateNote={updateCustomNote}
+            onUpdateNote={updateCustomNoteEnhanced}
             onDeleteNote={deleteCustomNote}
           />
-        )}
+        </motion.div>
 
-        <div className="grid grid-cols-1 gap-6">
-          {allNotes.map(note => (
-            <div key={note.id} className="gpa-card bg-slate-900 border-l-4 border-l-emerald-500">
-              <h4 className="font-bold mb-4 flex items-center justify-between">
-                {note.title}
-                <span className="text-[10px] font-black uppercase text-slate-400 bg-slate-800 px-2 py-1 rounded">
-                  {note.type}
-                </span>
-              </h4>
-              <RichTextEditor
-                value={note.content}
-                onChange={(newContent) => {
-                  if (note.type === 'semester') {
-                    updateSemesterNotes(note.semesterId, newContent);
-                  } else if (note.courseId) {
-                    updateCourseNotes(note.semesterId, note.courseId, newContent);
-                  }
-                }}
-                placeholder="Start writing..."
-                className="min-h-[150px]"
-              />
+        {/* Course & Semester Notes */}
+        {searchQuery && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Search size={18} className="text-slate-400" />
+              <h3 className="font-bold">Search Results for "{searchQuery}"</h3>
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="ml-auto text-xs text-slate-400 hover:text-white"
+              >
+                Clear
+              </button>
             </div>
-          ))}
-          {allNotes.length === 0 && (
-            <div className="col-span-full py-20 text-center text-slate-500">
-              No notes found matching your search.
+            <div className="grid grid-cols-1 gap-4">
+              {allNotes.map(note => (
+                <div key={note.id} className="gpa-card border-l-4 border-l-emerald-500">
+                  <h4 className="font-bold mb-4 flex items-center justify-between">
+                    {note.title}
+                    <span className="text-[10px] font-black uppercase text-slate-400 bg-slate-800 px-2 py-1 rounded">
+                      {note.type}
+                    </span>
+                  </h4>
+                  <RichTextEditor
+                    value={note.content}
+                    onChange={(newContent) => {
+                      if (note.type === 'semester') {
+                        updateSemesterNotes(note.semesterId, newContent);
+                      } else if (note.courseId) {
+                        updateCourseNotes(note.semesterId, note.courseId, newContent);
+                      }
+                    }}
+                    placeholder="Start writing..."
+                    className="min-h-[150px]"
+                  />
+                </div>
+              ))}
+              {allNotes.length === 0 && (
+                <div className="text-center py-12 text-slate-500">
+                  <Search size={40} className="mx-auto mb-3 opacity-30" />
+                  <p>No notes found matching "{searchQuery}"</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </motion.div>
+        )}
       </div>
     );
   };
@@ -1125,15 +1248,25 @@ const App: React.FC = () => {
         {activeTab === 'semesters' && renderSemesters()}
         {activeTab === 'timetable' && (
           <div className="space-y-6 pb-24">
-            <h2 className="text-2xl font-bold">Class Timetable</h2>
-            <div className="gpa-card bg-white dark:bg-slate-900">
-              <Timetable 
-                entries={data.timetable} 
-                courses={data.semesters.flatMap(s => s.courses)}
-                onAddEntry={() => setIsTimetableModalOpen(true)}
-                onDeleteEntry={deleteTimetableEntry}
-              />
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between"
+            >
+              <h2 className="text-xl sm:text-2xl font-bold">Class Timetable</h2>
+              <button
+                onClick={() => setActiveTab('home')}
+                className="text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                ← Back
+              </button>
+            </motion.div>
+            <EnhancedTimetable 
+              entries={data.timetable} 
+              courses={data.semesters.flatMap(s => s.courses)}
+              onAddEntry={() => setIsTimetableModalOpen(true)}
+              onDeleteEntry={deleteTimetableEntry}
+            />
           </div>
         )}
         {activeTab === 'notes' && renderNotes()}
@@ -1161,12 +1294,14 @@ const App: React.FC = () => {
                 ← Back
               </button>
             </motion.div>
-            <BudgetTracker
+            <EnhancedBudgetTracker
               budgets={data.budgets || []}
               onAddBudget={addBudget}
               onAddExpense={addExpense}
               onDeleteExpense={deleteExpense}
               onUpdateBudget={updateBudget}
+              onAddIncome={addIncome}
+              onDeleteIncome={deleteIncome}
             />
           </div>
         )}
@@ -1191,6 +1326,29 @@ const App: React.FC = () => {
               onAddAttendance={addAttendance}
               onUpdateAttendance={updateAttendance}
               onDeleteAttendance={deleteAttendance}
+            />
+          </div>
+        )}
+        {activeTab === 'grading' && (
+          <div className="space-y-6 pb-28">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between"
+            >
+              <button
+                onClick={() => setActiveTab('home')}
+                className="text-xs text-slate-400 hover:text-white transition-colors"
+              >
+                ← Back
+              </button>
+            </motion.div>
+            <GradingSystem
+              gradings={data.courseGradings || []}
+              semesters={data.semesters}
+              onAddGrading={addGrading}
+              onUpdateGrading={updateGrading}
+              onDeleteGrading={deleteGrading}
             />
           </div>
         )}

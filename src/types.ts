@@ -105,6 +105,35 @@ export interface AttendanceRecord {
   notes?: string;
 }
 
+// Grading System Types
+export type MarksHeadType = 'assignment' | 'quiz' | 'midterm' | 'final' | 'project' | 'test' | 'presentation' | 'lab' | 'participation' | 'other';
+
+export interface MarksHead {
+  id: string;
+  name: string;
+  type: MarksHeadType;
+  maxMarks: number;
+  marksObtained: number | null; // null means not entered
+  weightage?: number; // percentage weightage if applicable
+}
+
+export interface CourseGrading {
+  id: string;
+  courseId: string;
+  semesterId: string;
+  courseName: string;
+  courseCode: string;
+  instructor: string;
+  program: string;
+  section: string;
+  marksHeads: MarksHead[];
+  totalMaxMarks: number;
+  totalObtained: number;
+  percentage: number;
+  grade: Grade | '';
+  notes?: string;
+}
+
 export interface AppData {
   semesters: Semester[];
   timetable: TimetableEntry[];
@@ -120,6 +149,7 @@ export interface AppData {
   studySessions?: StudySession[];
   studyGoalMinutes?: number; // daily study goal in minutes
   attendance?: AttendanceRecord[];
+  courseGradings?: CourseGrading[];
 }
 
 export const GRADE_SCALE: Record<Grade, number> = {

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Wallet, Plus, Trash2, TrendingUp, TrendingDown, 
   Coffee, Car, Book, Gamepad2, Zap, Home, MoreHorizontal,
-  PieChart, Calendar, Banknote, ChevronLeft, ChevronRight
+  PieChart, Calendar, Banknote, ChevronLeft, ChevronRight,
+  Heart, Shirt, Phone, Wifi, CreditCard
 } from 'lucide-react';
 import clsx from 'clsx';
 import { MonthlyBudget, Expense, ExpenseCategory } from '../types';
@@ -23,6 +24,11 @@ const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: typeof Coffee; color: str
   entertainment: { icon: Gamepad2, color: 'text-purple-400 bg-purple-900/30', label: 'Entertainment' },
   utilities: { icon: Zap, color: 'text-yellow-400 bg-yellow-900/30', label: 'Utilities' },
   rent: { icon: Home, color: 'text-pink-400 bg-pink-900/30', label: 'Rent & Housing' },
+  health: { icon: Heart, color: 'text-red-400 bg-red-900/30', label: 'Health' },
+  clothing: { icon: Shirt, color: 'text-indigo-400 bg-indigo-900/30', label: 'Clothing' },
+  phone: { icon: Phone, color: 'text-cyan-400 bg-cyan-900/30', label: 'Phone' },
+  internet: { icon: Wifi, color: 'text-teal-400 bg-teal-900/30', label: 'Internet' },
+  subscription: { icon: CreditCard, color: 'text-violet-400 bg-violet-900/30', label: 'Subscriptions' },
   other: { icon: MoreHorizontal, color: 'text-slate-400 bg-slate-700', label: 'Other' },
 };
 
@@ -99,8 +105,8 @@ export default function BudgetTracker({
     return acc;
   }, {} as Record<ExpenseCategory, Expense[]>) || {};
 
-  const categoryTotals = Object.entries(expensesByCategory).map(([cat, exps]) => ({
-    category: cat as ExpenseCategory,
+  const categoryTotals = (Object.entries(expensesByCategory) as [ExpenseCategory, Expense[]][]).map(([cat, exps]) => ({
+    category: cat,
     total: exps.reduce((sum, e) => sum + e.amount, 0),
     count: exps.length,
   })).sort((a, b) => b.total - a.total);

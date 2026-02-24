@@ -40,7 +40,7 @@ export default function AttendanceTracker({
   const allCourses = useMemo(() => {
     return semesters
       .filter(s => !s.isCompleted)
-      .flatMap(s => s.courses.map(c => ({ ...c, semesterName: s.name })));
+      .flatMap(s => s.courses.map(c => ({ ...c, semesterName: s.name, semesterId: s.id })));
   }, [semesters]);
 
   // Get attendance for selected date
@@ -91,8 +91,10 @@ export default function AttendanceTracker({
 
   const handleAddAttendance = () => {
     if (selectedCourse) {
+      const course = allCourses.find(c => c.id === selectedCourse);
       onAddAttendance({
         courseId: selectedCourse,
+        semesterId: course?.semesterId || '',
         date: selectedDate,
         status: selectedStatus,
         notes: notes || undefined,
@@ -279,6 +281,7 @@ export default function AttendanceTracker({
                                 } else {
                                   onAddAttendance({
                                     courseId: course.id,
+                                    semesterId: course.semesterId,
                                     date: selectedDate,
                                     status,
                                   });

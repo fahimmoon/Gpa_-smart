@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { TimetableEntry, Course } from '../types';
+import { TimetableEntry, Course, ClassType, StudyBlock } from '../types';
 import { 
   Clock, MapPin, Plus, Trash2, Calendar, ChevronLeft, ChevronRight,
   Sun, Moon, Coffee, BookOpen, Timer, AlertCircle, CheckCircle,
-  List, Grid3X3, Printer, Filter, Bell
+  List, Grid3X3, Printer, Filter, Bell, Download, User, 
+  FlaskConical, Presentation, Users, Wrench, GraduationCap, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import clsx from 'clsx';
@@ -11,8 +12,12 @@ import clsx from 'clsx';
 interface EnhancedTimetableProps {
   entries: TimetableEntry[];
   courses: Course[];
+  studyBlocks?: StudyBlock[];
+  academicWeekStart?: string;
   onAddEntry: () => void;
   onDeleteEntry: (id: string) => void;
+  onAddStudyBlock?: (block: Omit<StudyBlock, 'id'>) => void;
+  onDeleteStudyBlock?: (id: string) => void;
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
@@ -24,6 +29,15 @@ const TIME_SLOTS = [
   '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', 
   '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
 ];
+
+const CLASS_TYPE_CONFIG: Record<ClassType, { icon: typeof BookOpen; color: string; label: string }> = {
+  lecture: { icon: BookOpen, color: 'text-emerald-400 bg-emerald-900/30', label: 'Lecture' },
+  lab: { icon: FlaskConical, color: 'text-blue-400 bg-blue-900/30', label: 'Lab' },
+  seminar: { icon: Users, color: 'text-purple-400 bg-purple-900/30', label: 'Seminar' },
+  tutorial: { icon: GraduationCap, color: 'text-amber-400 bg-amber-900/30', label: 'Tutorial' },
+  workshop: { icon: Wrench, color: 'text-cyan-400 bg-cyan-900/30', label: 'Workshop' },
+  other: { icon: FileText, color: 'text-slate-400 bg-slate-700', label: 'Other' },
+};
 
 const COURSE_COLORS = [
   'from-emerald-500/20 to-teal-500/20 border-emerald-500',
@@ -56,14 +70,19 @@ const getTimeDiff = (time1: string, time2: string): number => {
 
 export const EnhancedTimetable: React.FC<EnhancedTimetableProps> = ({ 
   entries, 
-  courses, 
+  courses,
+  studyBlocks = [],
+  academicWeekStart,
   onAddEntry, 
-  onDeleteEntry 
+  onDeleteEntry,
+  onAddStudyBlock,
+  onDeleteStudyBlock
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [selectedDay, setSelectedDay] = useState<typeof DAYS[number]>(getDayOfWeek());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showOnlyToday, setShowOnlyToday] = useState(false);
+  const [showStudyBlocks, setShowStudyBlocks] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<string | 'all'>('all');
 
   // Update current time every minute
@@ -153,6 +172,50 @@ export const EnhancedTimetable: React.FC<EnhancedTimetableProps> = ({
     };
   }, [filteredEntries]);
 
+  // Academic week number
+  const academicWeek = useMemo(() => {
+    if (!academicWeekStart) return null;
+    const start = new Date(academicWeekStart);
+    const now = new Date();
+    const diffTime = now.getTime() - start.getTime();
+    const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
+    return diffWeeks > 0 ? diffWeeks : null;
+  }, [academicWeekStart]);
+
+  // Detect conflicts
+  const conflicts = useMemo(() => {
+    const found: { entry1: TimetableEntry; entry2: TimetableEntry }[] = [];
+    DAYS.forEach(day => {
+      const dayEntries = entries.filter(e => e.day === day).sort((a, b) => a.startTime.localeCompare(b.startTime));
+      for (let i = 0; i < dayEntries.length - 1; i++) {
+        const current = dayEntries[i];
+        const next = dayEntries[i + 1];
+        if (parseTime(current.endTime) > parseTime(next.startTime)) {
+          found.push({ entry1: current, entry2: next });
+        }
+      }
+    });
+    return found;
+  }, [entries]);
+
+  // Export schedule
+  const exportSchedule = () => {
+    const csvContent = [
+      'Day,Start Time,End Time,Course Code,Course Name,Type,Location,Instructor',
+      ...entries.map(e => {
+        const course = courses.find(c => c.id === e.courseId);
+        return `${e.day},${e.startTime},${e.endTime},"${course?.code || ''}","${course?.name || ''}",${e.classType || 'lecture'},"${e.location || ''}","${e.instructor || ''}"`;
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'timetable.csv';
+    a.click();
+  };
+
   // Free slots
   const findFreeSlots = (day: typeof DAYS[number]) => {
     const dayEntries = filteredEntries
@@ -204,10 +267,22 @@ export const EnhancedTimetable: React.FC<EnhancedTimetableProps> = ({
           <h3 className="text-lg font-bold flex items-center gap-2">
             <Calendar size={20} className="text-emerald-500" />
             Weekly Schedule
+            {academicWeek && (
+              <span className="ml-2 px-2 py-0.5 bg-blue-900/30 text-blue-400 text-xs font-bold rounded-full">
+                Week {academicWeek}
+              </span>
+            )}
           </h3>
           <p className="text-sm text-slate-400">{todayStr}</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={exportSchedule}
+            className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-medium transition-all"
+            title="Export Schedule"
+          >
+            <Download size={16} />
+          </button>
           <button
             onClick={onAddEntry}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-500/20"
@@ -216,6 +291,28 @@ export const EnhancedTimetable: React.FC<EnhancedTimetableProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Conflict Warning */}
+      {conflicts.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="gpa-card border-l-4 border-l-red-500 bg-red-900/10"
+        >
+          <div className="flex items-center gap-3">
+            <AlertCircle size={20} className="text-red-400" />
+            <div>
+              <p className="font-bold text-red-400">Schedule Conflict Detected</p>
+              <p className="text-sm text-slate-400">
+                {conflicts.length} overlapping class{conflicts.length > 1 ? 'es' : ''} found - 
+                {conflicts.map((c, i) => (
+                  <span key={i}> {getCourseCode(c.entry1.courseId)} &amp; {getCourseCode(c.entry2.courseId)}{i < conflicts.length - 1 ? ',' : ''}</span>
+                ))}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Today's Status Card */}
       {today !== 'Sunday' && today !== 'Saturday' && (

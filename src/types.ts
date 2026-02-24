@@ -20,6 +20,8 @@ export interface Semester {
   endDate?: string;
 }
 
+export type ClassType = 'lecture' | 'lab' | 'seminar' | 'tutorial' | 'workshop' | 'other';
+
 export interface TimetableEntry {
   id: string;
   courseId: string;
@@ -27,6 +29,36 @@ export interface TimetableEntry {
   startTime: string;
   endTime: string;
   location?: string;
+  classType?: ClassType;
+  instructor?: string;
+  room?: string;
+  building?: string;
+  notes?: string;
+  isRecurring?: boolean;
+  color?: string;
+  reminder?: number; // minutes before class
+}
+
+export interface StudyBlock {
+  id: string;
+  day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+  startTime: string;
+  endTime: string;
+  subject?: string;
+  location?: string;
+  notes?: string;
+}
+
+export interface RecurringExpense {
+  id: string;
+  name: string;
+  amount: number;
+  category: ExpenseCategory;
+  frequency: 'weekly' | 'monthly' | 'yearly';
+  dueDay: number; // day of month or week
+  isActive: boolean;
+  lastPaid?: string;
+  nextDue?: string;
 }
 
 export type TodoPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -58,8 +90,8 @@ export interface CustomNote {
   tags?: string[];
 }
 
-export type ExpenseCategory = 'food' | 'transport' | 'books' | 'entertainment' | 'utilities' | 'rent' | 'other';
-export type IncomeSource = 'allowance' | 'parttime' | 'scholarship' | 'freelance' | 'gift' | 'other';
+export type ExpenseCategory = 'food' | 'transport' | 'books' | 'entertainment' | 'utilities' | 'rent' | 'health' | 'clothing' | 'phone' | 'internet' | 'subscription' | 'other';
+export type IncomeSource = 'allowance' | 'parttime' | 'scholarship' | 'freelance' | 'gift' | 'refund' | 'other';
 
 export interface Expense {
   id: string;
@@ -168,6 +200,7 @@ export interface CourseGrading {
 export interface AppData {
   semesters: Semester[];
   timetable: TimetableEntry[];
+  studyBlocks?: StudyBlock[];
   todos?: Todo[];
   customNotes?: CustomNote[];
   globalNotes?: string;
@@ -177,6 +210,8 @@ export interface AppData {
   customReminders: { id: string; text: string; date: string }[];
   // Budget features
   budgets?: MonthlyBudget[];
+  recurringExpenses?: RecurringExpense[];
+  categoryBudgets?: Record<ExpenseCategory, number>;
   // Study tracking
   studySessions?: StudySession[];
   studyGoalMinutes?: number; // daily study goal in minutes
@@ -187,6 +222,8 @@ export interface AppData {
   // Attendance
   attendance?: AttendanceRecord[];
   courseGradings?: CourseGrading[];
+  // Academic calendar
+  academicWeekStart?: string; // ISO date of first week of semester
 }
 
 export const GRADE_SCALE: Record<Grade, number> = {

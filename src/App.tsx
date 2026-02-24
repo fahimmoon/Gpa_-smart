@@ -31,7 +31,7 @@ import {
   Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AppData, Semester, Course, Grade, STORAGE_KEY, TimetableEntry, MonthlyBudget, Expense, Income, AttendanceRecord, AttendanceStatus, Todo, TodoPriority, TodoCategory, CustomNote, NoteCategory, CourseGrading, Exam, StudySession, StudyTimerSettings, StudyStreak } from './types';
+import { AppData, Semester, Course, Grade, STORAGE_KEY, TimetableEntry, MonthlyBudget, Expense, Income, AttendanceRecord, AttendanceStatus, Todo, TodoPriority, TodoCategory, CustomNote, NoteCategory, CourseGrading, Exam, StudySession, StudyTimerSettings, StudyStreak, RecurringExpense } from './types';
 import { calculateSemesterGPA, calculateOverallCGPA, getNextSemesterName, percentageToGrade } from './utils';
 import { SemesterCard } from './components/SemesterCard';
 import { GPAChart } from './components/GPAChart';
@@ -495,6 +495,26 @@ const App: React.FC = () => {
       )
     }));
     addToast('Income deleted!');
+  };
+
+  // --- Recurring Expense Handlers ---
+  const addRecurringExpense = (recurring: Omit<RecurringExpense, 'id'>) => {
+    setData(prev => ({
+      ...prev,
+      recurringExpenses: [
+        ...(prev.recurringExpenses || []),
+        { ...recurring, id: Math.random().toString(36).substr(2, 9) }
+      ]
+    }));
+    addToast('Recurring expense added!');
+  };
+
+  const deleteRecurringExpense = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      recurringExpenses: (prev.recurringExpenses || []).filter(r => r.id !== id)
+    }));
+    addToast('Recurring expense deleted!');
   };
 
   // --- Attendance Handlers ---
@@ -1349,6 +1369,8 @@ const App: React.FC = () => {
             <EnhancedTimetable 
               entries={data.timetable} 
               courses={data.semesters.flatMap(s => s.courses)}
+              studyBlocks={data.studyBlocks}
+              academicWeekStart={data.academicWeekStart}
               onAddEntry={() => setIsTimetableModalOpen(true)}
               onDeleteEntry={deleteTimetableEntry}
             />
@@ -1381,12 +1403,16 @@ const App: React.FC = () => {
             </motion.div>
             <EnhancedBudgetTracker
               budgets={data.budgets || []}
+              recurringExpenses={data.recurringExpenses}
+              categoryBudgets={data.categoryBudgets}
               onAddBudget={addBudget}
               onAddExpense={addExpense}
               onDeleteExpense={deleteExpense}
               onUpdateBudget={updateBudget}
               onAddIncome={addIncome}
               onDeleteIncome={deleteIncome}
+              onAddRecurring={addRecurringExpense}
+              onDeleteRecurring={deleteRecurringExpense}
             />
           </div>
         )}
